@@ -1,6 +1,6 @@
 # Iowa Liquor Sales Exploratory Analysis
 
-**This project was done the week of 9/14.**
+**This project was done the week of 9/14** with the [Iowa Liquor Sales](https://www.kaggle.com/residentmario/iowa-liquor-sales) Kaggle data set.
 
 Purpose: get familiar with the Julia data environment (CSV, DataFrames, Query, etc.).
 
