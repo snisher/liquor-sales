@@ -172,7 +172,7 @@ I'll try implementing k-modes.
 
 features = convert.(Int64, features)
 
-include("kmodes.jl")
+include("../kmodes/kmodes.jl")
 
 results = KModes.kmodes(features, 5) # takes a little while
 
