@@ -20,7 +20,7 @@ Investigation of store sales by price:
 
 ### Clustering!
 
-I [implmented the k-modes algorithm](https://github.com/snisher/projects/tree/master/kmodes) in Julia, and used it to cluster sales. Then I looked at whether the clusters were useful for predicting which items would be sold at specific stores:
+I [implemented the k-modes algorithm](https://github.com/snisher/projects/tree/master/kmodes) in Julia, and used it to cluster sales. Then I looked at whether the clusters were useful for predicting which items would be sold at specific stores:
 
 ![Sales by Cluster](https://raw.githubusercontent.com/snisher/projects/master/liquor%20sales/cluster_sales_by_store.png)
 
