@@ -99,11 +99,11 @@ bin_vals!(sales.Retail) # make retail price categorical (high, med, low)
 # for each store, see how many bottles of each price range were sold
 groups = combine(groupby(sales, [:Store, :Retail]), :Bottles_sold=>sum)
 
-bars = hcat([sort(groups[groups.Store .== store, :], :Retail).Bottles_sold_sum for store in unique(sales.Store)]...)'
+bs = hcat([sort(groups[groups.Store .== store, :], :Retail).Bottles_sold_sum for store in unique(sales.Store)]...)'
 ctg = repeat(["1. cheap", "2. medium", "3. expensive"], 5)
 nams = repeat("Store " .* string.(unique(sales.Store)), 3)
-groupedbar(nams, bars, group=ctg, bar_position=:dodge, title="Bottles Sold by Price Range",
-            ylabel="Bottles Sold", xlabel="Store")
+gb = groupedbar(nams, bs, group=ctg, bar_position=:dodge, title="Bottles Sold by Price Range",
+        ylabel="Bottles Sold", xlabel="Store", dpi=250)
 
 ##
 # Store 2248 sells more bottles of expensive alcohol than either medium or cheap alcohol,
@@ -125,16 +125,18 @@ Features to cluster on (product features):
 [11, 13, 17, 18, 20, 22]
 """
 
-sales = CSV.File("Iowa_Liquor_Sales.csv", select=[7,11,13,17,18,20,22]) |> DataFrame |> dropmissing
+sales = CSV.File("Iowa_Liquor_Sales.csv", select=[3,7,11,13,17,18,20,22]) |> DataFrame |> dropmissing
 rename!(sales, Dict("Vendor Number"=>"Vendor", "Bottle Volume (ml)"=>"Bottle_volume", "Zip Code"=>"Zip",
-                    "State Bottle Retail"=>"Retail", "Sale (Dollars)"=>"Dollars"))
+                    "State Bottle Retail"=>"Retail", "Sale (Dollars)"=>"Dollars",
+                    "Store Number"=>"Store"))
 
 sales = sales[sales.Zip .== "50312", :] # only sales from this zip code
-sales = sales[2:end] # drop the zip code column
+select!(sales, Not(:Zip)) # drop the zip code column
 
 sales.Dollars = parse.(Float32, strip.(sales.Dollars, '$'))
 sales.Retail = parse.(Float32, strip.(sales.Retail, '$'))
 
+sales.Store = "#".*string.(sales.Store) 
 """
 ####
 bin continuous variables into categorical
@@ -150,7 +152,7 @@ bin_vals!(sales.Dollars)
 bin_vals!(sales.Retail)
 bin_vals!(sales.Bottle_volume)
 
-features = collect(Matrix(sales)') # PKMeans expects features in rows, so need to transpose
+features = collect(Matrix(select(sales, Not(:Store)))') # transpose bc PKMeans expects features in rows
 
 results = kmeans(features, 4, metric=Hamming()) # hamming distance for categorical features
 
@@ -164,18 +166,50 @@ costs = [kmeans(features, i, metric=Hamming(), verbose=false).totalcost for i in
 
 """
 Hamming distance isn't working well. Points are mostly assigned to the same cluster...
-This could be due to using the mean of these categorical features (which is nonsensical).
+This could be due to kmeans using the mean of categorical features (which is nonsensical).
 I'll try implementing k-modes.
 """
 
+features = convert.(Int64, features)
 
+include("kmodes.jl")
 
+results = KModes.kmodes(features, 5) # takes a little while
 
+# This will be different if run again! 
+histogram(sales.Retail[results.assignments .== 1]) # cluster 1 = cheap
+histogram(sales.Retail[results.assignments .== 2]) # cluster 2 = expensive
+histogram(sales.Retail[results.assignments .== 3]) # cluster 3 = medium
+histogram(sales.Retail[results.assignments .== 4]) # mostly cheap and medium
+histogram(sales.Retail[results.assignments .== 5]) # medium
 
+histogram(sales.Bottle_volume[results.assignments .== 1]) # small bottles
+
+histogram(sales.Pack[results.assignments .== 1]) # 24 packs are overrepresented in clust 1
+
+# For the clusters I got when writing this (they will change if run again), cluster 1 was
+# mostly cheap, small bottles, that came in large packs.
+
+# plot the sales of each different cluster across the stores
+
+function bars(clust)
+    sales_by_store = []
+    for name in unique(sales.Store)
+        total_sales = sum(sales.Store .== name)
+        clust_sales = sum(sales.Store[results.assignments .== clust] .== name)
+        push!(sales_by_store, clust_sales/total_sales)
+    end
+    return sales_by_store
+end
+
+ps = [
+    bar(unique(sales.Store), bars(i), legend=false, title="Cluster $i",
+            ylims=(0,1), ylabel="% Sales", dpi=200)
+    for i in 1:5]
+
+l = @layout [a b; c d; e]
+p = plot(ps..., layout=l, dpi=200)
 
 """
-TODO
-
-- In first section looking at sales of different categories in different stores, 
-    normalize sales based on the store's average sales.
+Some 
 """

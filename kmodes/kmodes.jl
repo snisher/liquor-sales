@@ -1,4 +1,4 @@
-module kmodes
+module KModes
 
 """
 Based on the Python implementation here: https://github.com/nicodv/kmodes
@@ -13,6 +13,7 @@ mutable struct KmodesResult
     assignments::Array{Int64,1}
     cost::Int64
     cost_history::Array{Int64,1}
+    converged::Bool
 end
 
 """
@@ -126,7 +127,7 @@ end
 """
 The K-Modes algorithm. Like K-Means, except uses the mode. For categorical data.
 """
-function kmodes(X::Array{Int64, 2}, k::Int64; init=random_centroid_init, max_iter=300)
+function kmodes(X::Array{Int64, 2}, k::Int64; init=random_centroid_init, max_iter=50)
     println("KModes! Remember: instances in columns, features in rows.")
     @assert k < size(X, 2) "There must be fewer clusters than points"
 
@@ -172,13 +173,15 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=random_centroid_init, max_ite
                                 rand_point_idx, rand_point, old_clust_idx, largest_cluster_idx)
             end
         end
-        new_cost = total_cost(membership, X)
-        converged = (moves == 0) || (new_cost >= cost) # check if converged (no moves, or cost increased)
+        new_cost = total_cost(centroids, X)
+        converged = (moves == 0) # || (new_cost >= cost) # check if converged (no moves, or cost increased)
         cost = new_cost
         push!(cost_history, cost)
     end
     assignments = [argmax(centroids) for centroids in eachcol(membership)]
-    return KmodesResult(assignments, cost, cost_history)
+    return KmodesResult(assignments, cost, cost_history, converged)
 end
 
 end # module
+
+# TODO: are the convergence criteria correct?
