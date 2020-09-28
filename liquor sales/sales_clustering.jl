@@ -137,15 +137,14 @@ sales.Dollars = parse.(Float32, strip.(sales.Dollars, '$'))
 sales.Retail = parse.(Float32, strip.(sales.Retail, '$'))
 
 sales.Store = "#".*string.(sales.Store) 
+
 """
-####
-bin continuous variables into categorical
+bin continuous variables into categorical (for the sake of using the KModes algorithm)
 We will be using the Hamming distance for clustering, so we don't need one-hot labels:
     Hamming distance = sum(x .!= y). For every feature of x that is not equal to the corresponding
     feature of y, a distance of 1 is added to the hamming distance. This sometimes works with
     categorical data bc it doesn't calculate a euclidean distance between categorical variables
     which is nonsensical.
-####
 """
 
 bin_vals!(sales.Dollars)
