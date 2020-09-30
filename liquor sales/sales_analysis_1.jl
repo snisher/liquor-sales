@@ -1,3 +1,7 @@
+"""
+Some basic exploratory analysis on Gin sales.
+"""
+
 using CSV, DataFrames, Dates, Query, Plots
 
 sales = CSV.File("Iowa_Liquor_Sales.csv", select=[2, 3, 4, 6, 11, 12, 13, 14, 15, 21]) |> DataFrame |> dropmissing
