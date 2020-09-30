@@ -18,9 +18,7 @@ for (idx, name) in enumerate(names(sample))
 end
 
 """
-####
 First, some analysis of sale volume by category for stores in a single zip code, 50312 (Des Moines)
-####
 """
 
 sales = CSV.File("Iowa_Liquor_Sales.csv", select=[2,3,4,6,7,11,12,20,21]) |> DataFrame |> dropmissing
@@ -60,16 +58,8 @@ for (key, val) in table_dict # key = store number, val = dict of categories => b
     table[:, string(key)] = values(sort(Dict(val), byvalue=false)) # sort by key (category), then get the values (bottles sold for this store)
 end
 
-# to visualize more easily, this function shows the number of sales of a given category for all stores
-function show_sales_by_category(df::DataFrame, cat::String)
-    row = df[df.Category .== cat, :] # a single category
-    stores = names(df)[2:end] # the store numbers
-    stores = "Store #".*string.(stores) # store labels
-    vals = Array(row[:, 2:end])' # Plots expects a column vector, so transpose
-    bar(stores, vals, legend=false, title="$(cat) Sales", ylabel="Bottles Sold")
-end
-
-show_sales_by_category(table, categories[2])
+# to visualize more easily, this function shows the number of sales of a given category for each stores
+HelperFunctions.show_sales_by_category(table, categories[2])
 
 """
 These stores probably specialize in either cheap alcohol or expensive alcohol.

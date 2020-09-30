@@ -3,6 +3,12 @@ Clustering alcohol product sales from a single zip code.
 
 Problem statement: find clusters of products that are overrepresented in some stores
     (useful for product distribution).
+To do this I will cluster line-item sales invoices. This is very similar to clustering
+    on product IDs, but leaves purchases of the same product in the table. This is useful
+    because in the end we can still see the quantity of each product (which would have
+    been abstracted away if we grouped by product ID).
+
+First K-means is tested, then K-modes.
 """
 
 using CSV, DataFrames, Dates, Plots
@@ -40,13 +46,14 @@ features = collect(Matrix(select(sales, Not(:Store)))') # transpose bc PKMeans e
 
 results = kmeans(features, 4, metric=Hamming()) # hamming distance for categorical features
 
-# print how many points are assigned to each cluster
+# print how many points are assigned to each cluster (all get assigned to a single cluster usually)
 for center in 1:size(results.centers, 2)
     println("points in cluster $(center): ", sum(results.assignments .== center))
 end
 
-# "elbow" method of finding optimal number of clusters
+# "elbow" method of finding optimal number of clusters (none show greatly improved performance)
 costs = [(i=>kmeans(features, i, metric=Hamming(), verbose=false).totalcost) for i in 2:8]
+
 
 """
 Hamming distance K-means isn't working well. Points are mostly assigned to the same cluster...
@@ -55,11 +62,12 @@ This could be due to kmeans using the mean of categorical features (which is non
 Lets try K-modes.
 """
 
+
 features = convert.(Int64, features)
 
 results = KModes.kmodes(features, 5) # takes a little while
 
-# This will be different if run again! 
+# These will be different if run again! 
 histogram(sales.Retail[results.assignments .== 1]) # cluster 1 = cheap
 histogram(sales.Retail[results.assignments .== 2]) # cluster 2 = expensive
 histogram(sales.Retail[results.assignments .== 3]) # cluster 3 = medium
