@@ -34,11 +34,11 @@ Data was loaded into DataFrames and manipulated in that format.
 The results from K-modes clustering are returned in a KmodesResult data structure.
 
 ### Research and Modeling
-- To get a feel for the data, I analyzed gin sales: [sales_analysis_1.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_analysis_1_pluto.jl).
+- To get a feel for the data, I analyzed gin sales: [sales_analysis_1_pluto.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_analysis_1_pluto.jl).
 
-- Groups of products were investigated to see if the problem statement was reasonable: [sales_analysis_2.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_analysis_2_pluto.jl).
+- Groups of products were investigated to see if the problem statement was reasonable: [sales_analysis_2_pluto.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_analysis_2_pluto.jl).
 
-- Products were then clustered and sales by store analyzed: [sales_clustering.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_clustering_pluto.jl).
+- Products were then clustered and sales by store analyzed: [sales_clustering_pluto.jl](https://github.com/snisher/projects/blob/master/liquor%20sales/sales_clustering_pluto.jl).
 
 ## What worked/ didn't work
 **Tools**:
@@ -74,11 +74,3 @@ Store *#4594* sold almost entirely (~80%) products falling in cluster 4. About 5
 - Investigate these clustering trends in other zip codes.
 - Try K-prototypes algorithm for clustering on mixed continuous and categorical data.
 - Turn K-modes implementation into a Julia package?
-
-
-
-
-
-
-# CHANGE LINKS TO PLUTO FILES
-
