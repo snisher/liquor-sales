@@ -17,7 +17,7 @@ md"# Liquor Sales Analysis 1"
 # ╔═╡ 497803f4-0504-11eb-36ed-377d7f6347ea
 # import and format data
 begin
-	sales = CSV.File("Iowa_Liquor_Sales.csv", select=[2, 3, 4, 6, 11, 12, 13, 14, 15, 21]) |> DataFrame |> dropmissing;
+	sales = CSV.File("../Iowa_Liquor_Sales.csv", select=[2, 3, 4, 6, 11, 12, 13, 14, 15, 21]) |> DataFrame |> dropmissing;
 	
 	rename!(sales, Dict("Vendor Number"=>"Vendor", "Vendor Name"=>"Vendor_name", "Store Name"=>"Store_name", "Bottles Sold"=>"Quantity", "Store Number"=>"Store", "Item Number"=>"Item", "Category Name"=>"Category_name"))
 	
