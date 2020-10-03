@@ -10,10 +10,11 @@ using StatsBase: sample
 export kmodes
 
 mutable struct KmodesResult
+    converged::Bool
     assignments::Array{Int64,1}
     cost::Int64
     cost_history::Array{Int64,1}
-    converged::Bool
+    centroids::Array{Int64,2}
 end
 
 """
@@ -179,9 +180,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=random_centroid_init, max_ite
         push!(cost_history, cost)
     end
     assignments = [argmax(centroids) for centroids in eachcol(membership)]
-    return KmodesResult(assignments, cost, cost_history, converged)
+    return KmodesResult(converged, assignments, cost, cost_history, centroids)
 end
 
 end # module
-
-# TODO: are the convergence criteria correct?

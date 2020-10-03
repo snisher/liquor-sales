@@ -11,15 +11,15 @@ To do this I will cluster line-item sales invoices. This is very similar to clus
 First K-means is tested, then K-modes.
 """
 
-using CSV, DataFrames, Dates, Plots
+using CSV, DataFrames, Dates, Plots, StatsBase
 using ParallelKMeans, Distances
 include("../kmodes/kmodes.jl")
 include("helper_functions.jl")
 
-sales = CSV.File("Iowa_Liquor_Sales.csv", select=[3,7,11,13,17,18,20,22]) |> DataFrame |> dropmissing
+sales = CSV.File("Iowa_Liquor_Sales.csv", select=[3,7,11,13,15,17,18,20,22]) |> DataFrame |> dropmissing
 rename!(sales, Dict("Vendor Number"=>"Vendor", "Bottle Volume (ml)"=>"Bottle_volume", "Zip Code"=>"Zip",
                     "State Bottle Retail"=>"Retail", "Sale (Dollars)"=>"Dollars",
-                    "Store Number"=>"Store"))
+                    "Store Number"=>"Store","Item Number"=>"Product_id"))
 
 sales = sales[sales.Zip .== "50312", :] # only sales from this zip code
 select!(sales, Not(:Zip)) # drop the zip code column
@@ -42,7 +42,18 @@ HelperFunctions.bin_vals!(sales.Dollars)
 HelperFunctions.bin_vals!(sales.Retail)
 HelperFunctions.bin_vals!(sales.Bottle_volume)
 
-features = collect(Matrix(select(sales, Not(:Store)))') # transpose bc PKMeans expects features in rows
+mean_int(x) = round(mean(x)) # round mean to the nearest whole number
+# group by product ID so we can cluster products
+products = combine(groupby(sales, :Product_id), 
+    ["Dollars"=>mean_int, "Retail"=>mean_int, "Bottle_volume"=>mean_int, 
+    "Pack"=>mean_int, "Vendor"=>mode, "Category"=>mode]
+    )
+
+###
+# K means
+###
+
+features = collect(Matrix(products)') # transpose bc PKMeans expects features in rows
 
 results = kmeans(features, 4, metric=Hamming()) # hamming distance for categorical features
 
@@ -65,18 +76,9 @@ Lets try K-modes.
 
 features = convert.(Int64, features)
 
-results = KModes.kmodes(features, 5) # takes a little while
+costs = [(i=>KModes.kmodes(features, i).cost) for i in 2:5]
 
-# These will be different if run again! 
-histogram(sales.Retail[results.assignments .== 1]) # cluster 1 = cheap
-histogram(sales.Retail[results.assignments .== 2]) # cluster 2 = expensive
-histogram(sales.Retail[results.assignments .== 3]) # cluster 3 = medium
-histogram(sales.Retail[results.assignments .== 4]) # mostly cheap and medium
-histogram(sales.Retail[results.assignments .== 5]) # medium
-
-histogram(sales.Bottle_volume[results.assignments .== 1]) # small bottles
-
-histogram(sales.Pack[results.assignments .== 1]) # 24 packs are overrepresented in clust 1
+results = KModes.kmodes(features, 4) # takes a little while
 
 # For the clusters I got when writing this (they will change if run again), cluster 1 was
 # mostly cheap, small bottles, that came in large packs.
@@ -84,9 +86,9 @@ histogram(sales.Pack[results.assignments .== 1]) # 24 packs are overrepresented 
 # plot the sales of each different cluster across the stores
 
 ps = [
-    bar(unique(sales.Store), HelperFunctions.bars(i, sales, results), legend=false,
+    bar(sort(unique(sales.Store)), HelperFunctions.bars(i, sales, products, results), legend=false,
             title="Cluster $i", ylims=(0,1), ylabel="% Sales")
-    for i in 1:5]
+    for i in 1:4]
 
-l = @layout [a b; c d; e]
+l = @layout [a b; c d]
 p = plot(ps..., layout=l)

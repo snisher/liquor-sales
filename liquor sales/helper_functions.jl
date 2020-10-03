@@ -3,7 +3,7 @@ module HelperFunctions
 export bin_vals!, bars, show_sales_by_category
 
 using StatsBase: quantile
-using DataFrames, Plots
+using DataFrames, Plots, DataStructures
 
 """
 bins the values in an array into high, medium and low (3, 2, and 1)
@@ -28,11 +28,17 @@ Creates the bar heights for a single bar graph showing the percent of store sale
 
 requires results::KmodesResult from the K-modes algorithm.
 """
-function bars(clust, sales_df, results)
+function bars(clust, sales_df, products, results)
     sales_by_store = []
-    for name in unique(sales_df.Store)
-        total_sales = sum(sales_df.Store .== name)
-        clust_sales = sum(sales_df.Store[results.assignments .== clust] .== name)
+    for name in sort(unique(sales_df.Store))
+        total_sales = sum(sales_df.Store .== name) # total sales for this store
+
+        clust_prod_ids = products.Product_id[results.assignments .== clust] # product IDs in this cluster
+        in_prod_ids = in(clust_prod_ids) # function returns whether its argument is in clust_prod_ids
+
+        # sum all purchases which are from the right store, and have a product ID in this cluster
+        clust_sales = sum( (sales_df.Store .== name) .& (in_prod_ids.(sales_df.Product_id)) )
+
         push!(sales_by_store, clust_sales/total_sales)
     end
     return sales_by_store
