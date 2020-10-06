@@ -139,9 +139,10 @@ The K-Modes algorithm. Like K-Means, except uses the mode. For categorical data.
 """
 function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_centroid_init, max_iter=50)
     println("KModes! Remember: instances in columns, features in rows.")
-    @assert k < size(X, 2) "There must be fewer clusters than points"
+    @assert k < size(X,2) "There must be fewer clusters than points"
     if !isnothing(init)
-        @assert typeof(init) == Array{Int64,2} "Initial centroids "
+        @assert size(init,1) == size(X,1) "Expected $(size(X,1)) features per centroid. Got $(size(init,1)). Centroids must have same number of features as the data points. Remember, # features = # rows!"
+        @assert size(init,2) == k "Expected $(k) centroids. Got $(size(init,2)). The number of centroids must equal k (the number of clusters). Remember, # centroids = # columns!"
     end
 
     membership = zeros(Bool, (k, size(X, 2))) # rows = clusters, cols = points
@@ -163,7 +164,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
 
     cost_history = [cost]
 
-    while iter <= max_iter && !converged
+    while iter < max_iter && !converged
         iter += 1
         moves = 0
         for (point_idx, point) in enumerate(eachcol(X))
@@ -188,7 +189,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
             end
         end
         new_cost = total_cost(centroids, X)
-        converged = (moves == 0) # || (new_cost >= cost) # check if converged (no moves, or cost increased)
+        converged = (moves == 0)  || (new_cost > cost) # check if converged (no moves, or cost increased)
         cost = new_cost
         push!(cost_history, cost)
     end
