@@ -67,7 +67,13 @@ function update_centroids!(centroids, cl_attr_freq, membership, X)
     for clust_idx = 1:size(centroids,2) # for each cluster
         for attr_idx = 1:size(centroids, 1) # for each attribute
             if sum(membership[clust_idx, :]) == 0 # if no points are assigned to this cluster
-                centroids[attr_idx, clust_idx] = rand(X[attr_idx, :]) # replace centroid attrs w random sample
+                possible_attrs = X[attr_idx, :]
+                used_attrs = centroids[attr_idx, :]
+                # in(arr) creates a function returning whether argument is in arr
+                new_attrs_idx = in(used_attrs).(possible_attrs) .== 0 # only non-duplicate attrs
+                # if there are only duplicate attrs, get all attrs, otherwise get the non-duplicates only
+                new_attrs = sum(new_attrs_idx) == 0 ? possible_attrs : possible_attrs[new_attrs_idx]
+                centroids[attr_idx, clust_idx] = rand(new_attrs) # random sample
             else
                 # change attribute to the mode of this cluster
                 mode_idx = argmax(collect(values(cl_attr_freq[clust_idx]))) # dict idx of most frequent attribute
@@ -127,17 +133,24 @@ end
 
 """
 The K-Modes algorithm. Like K-Means, except uses the mode. For categorical data.
+    arg init::Array{Int64,2} - initial centroid positions. Each column = centroid.
+    arg init_alg - function that initializes centroids.
+    max_iter::Int64 - maximum number of iterations.
 """
-function kmodes(X::Array{Int64, 2}, k::Int64; init=random_centroid_init, max_iter=50)
+function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_centroid_init, max_iter=50)
     println("KModes! Remember: instances in columns, features in rows.")
     @assert k < size(X, 2) "There must be fewer clusters than points"
+    if !isnothing(init)
+        @assert typeof(init) == Array{Int64,2} "Initial centroids "
+    end
 
     membership = zeros(Bool, (k, size(X, 2))) # rows = clusters, cols = points
     
     # dict of dicts: cluster_idx => dict with keys = attributes, values = frequencies  
     cl_attr_freq = DefaultDict{Int64, DefaultDict{Int64,Int64,Int64}}(()->DefaultDict{Int64,Int64}(0))
 
-    centroids = init(X, k) # initialize centroids (each column is a centroid)
+    # initialize centroids (each column is a centroid) with alg if initial centers not provided
+    centroids = isnothing(init) ? init_alg(X, k) : deepcopy(init)
 
     assign_clusters!(centroids, membership, cl_attr_freq, X) # initial cluster assignments
 
