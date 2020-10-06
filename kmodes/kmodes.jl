@@ -50,14 +50,21 @@ function assign_clusters!(centroids, membership, cl_attr_freq, X)
 
         # record how many times each attribute appears in this cluster
         for (attr_idx, attr) in enumerate(point)
-            cl_attr_freq[clust][attr] += 1
+            cl_attr_freq[clust][attr_idx][attr] += 1
         end
     end
     return
 end
 
-
-
+"""
+Gets the mode of the attributes from a cluster from the cl_attr_freq dict
+returns the mode::Int64
+"""
+function cl_attr_freq_mode(cl_attr_freq, clust_idx, attr_idx)
+    possible_attrs = [pair for pair in cl_attr_freq[clust_idx][attr_idx]] # get all attr => freq pairs
+    mode_idx = argmax([pair[2] for pair in possible_attrs]) # idx of most frequent attribute (pair[2] is the frequency)
+    return possible_attrs[mode_idx][1] # attribute associated with the above index
+end
 """
 Updates each centroid's attributes to the modes of its cluster.
 Mutates centroids and cl_attr_freq.
@@ -76,9 +83,7 @@ function update_centroids!(centroids, cl_attr_freq, membership, X)
                 centroids[attr_idx, clust_idx] = rand(new_attrs) # random sample
             else
                 # change attribute to the mode of this cluster
-                mode_idx = argmax(collect(values(cl_attr_freq[clust_idx]))) # dict idx of most frequent attribute
-                mode = collect(keys(cl_attr_freq[clust_idx]))[mode_idx] # attribute associated with the above index
-                centroids[attr_idx, clust_idx] = mode
+                centroids[attr_idx, clust_idx] = cl_attr_freq_mode(cl_attr_freq, clust_idx, attr_idx)
             end
         end
     end
@@ -97,13 +102,13 @@ function change_point_clust!(centroids, membership, cl_attr_freq,
     
     # update the cluster-attribute-frequencies dict
     for (attr_idx, attr) in enumerate(point)
-        cl_attr_freq[old_clust_idx][attr] -= 1 # decrement count from old cluster
-        cl_attr_freq[clust_idx][attr] += 1 # increment count in new cluster
+        cl_attr_freq[old_clust_idx][attr_idx][attr] -= 1 # decrement count from old cluster
+        cl_attr_freq[clust_idx][attr_idx][attr] += 1 # increment count in new cluster
         
         # if the new attribute's frequency is greater than the centroid's,
         # then the new attribute freq is the new mode. update the centroid.
         curr_mode = centroids[attr_idx, clust_idx] # the old mode (possibly no longer true mode)
-        if cl_attr_freq[clust_idx][curr_mode] < cl_attr_freq[clust_idx][attr] # compare frequencies
+        if cl_attr_freq[clust_idx][attr_idx][curr_mode] < cl_attr_freq[clust_idx][attr_idx][attr] # compare frequencies
             centroids[attr_idx, clust_idx] = attr # update centroid to have the mode
         end
         
@@ -111,9 +116,7 @@ function change_point_clust!(centroids, membership, cl_attr_freq,
         # we changed the old cluster's attribute frequencies
         if attr == centroids[attr_idx, old_clust_idx] # if attribute = previous cluster's mode:
             # recalculate the mode of the old cluster
-            mode_idx = argmax(collect(values(cl_attr_freq[old_clust_idx]))) # dict idx of most frequent attribute
-            mode = collect(keys(cl_attr_freq[old_clust_idx]))[mode_idx] # attribute associated with the above index
-            centroids[attr_idx, old_clust_idx] = mode
+            centroids[attr_idx, old_clust_idx] = cl_attr_freq_mode(cl_attr_freq, clust_idx, attr_idx)
         end
     end
     return
@@ -146,9 +149,9 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
     end
 
     membership = zeros(Bool, (k, size(X, 2))) # rows = clusters, cols = points
-    
-    # dict of dicts: cluster_idx => dict with keys = attributes, values = frequencies  
-    cl_attr_freq = DefaultDict{Int64, DefaultDict{Int64,Int64,Int64}}(()->DefaultDict{Int64,Int64}(0))
+
+    # triple nested dict... dict[c] = cluster, dict[c][a] = attribute 'a' of cluster 'c', dict[c][a][attr] = frequency of attr a
+    cl_attr_freq = DefaultDict(()->DefaultDict(()->DefaultDict(0))) # TODO: better to specify types in the defaultdicts?
 
     # initialize centroids (each column is a centroid) with alg if initial centers not provided
     centroids = isnothing(init) ? init_alg(X, k) : deepcopy(init)
