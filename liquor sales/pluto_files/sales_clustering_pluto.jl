@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.14
+# v0.12.0
 
 using Markdown
 using InteractiveUtils
@@ -7,16 +7,16 @@ using InteractiveUtils
 # ╔═╡ 6e555524-0512-11eb-168e-8fb383b62d5b
 begin
 	using Pkg
-	Pkg.activate("/Users/fisher/Documents/coding/projects/liquor sales/")
+	Pkg.activate("..")
 	using CSV, DataFrames, Dates, Plots, StatsBase
 	using ParallelKMeans, Distances
-	include("../kmodes/kmodes.jl")
-	include("helper_functions.jl")
+	include("../../kmodes/kmodes.jl")
+	include("../helper_functions.jl")
 end
 
 # ╔═╡ 9bbc86b6-0512-11eb-330b-7defba80f2c7
 begin
-	sales = CSV.File("Iowa_Liquor_Sales.csv", select=[3,7,11,13,15,17,18,20,22]) |> DataFrame |> dropmissing
+	sales = CSV.File("../Iowa_Liquor_Sales.csv", select=[3,7,11,13,15,17,18,20,22]) |> DataFrame |> dropmissing
 	rename!(sales, Dict("Vendor Number"=>"Vendor", "Bottle Volume (ml)"=>"Bottle_volume", "Zip Code"=>"Zip", "State Bottle Retail"=>"Retail", "Sale (Dollars)"=>"Dollars", "Store Number"=>"Store","Item Number"=>"Product_id"))
 	
 	sales = sales[sales.Zip .== "50312", :] # only sales from this zip code
@@ -29,7 +29,7 @@ begin
 end
 
 # ╔═╡ 606fc088-0515-11eb-03d9-f72e20a5cbee
-md"#### We want to cluster on product ID, so we need a table of the unique products"
+md"#### We want to cluster on product ID, so we need a table of unique products"
 
 # ╔═╡ 48d2c09a-0515-11eb-1da9-2db85935ff58
 begin
@@ -75,7 +75,7 @@ md"## K-modes"
 begin
 	features_kmodes = convert.(Int64, features)
 	
-	results_kmodes = KModes.kmodes(features_kmodes, 4) # takes a little while
+	results_kmodes = KModes.kmodes(features_kmodes, 4)
 end
 
 # ╔═╡ c32928fa-0514-11eb-1be2-25219f60f606

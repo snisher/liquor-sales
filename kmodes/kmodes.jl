@@ -192,7 +192,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
             end
         end
         new_cost = total_cost(centroids, X)
-        converged = (moves == 0)  || (new_cost > cost) # check if converged (no moves, or cost increased)
+        converged = (moves == 0) || (new_cost > cost) # check if converged (no moves, or cost increased)
         cost = new_cost
         push!(cost_history, cost)
     end
@@ -201,3 +201,5 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
 end
 
 end # module
+
+# TODO: non random centroid initialization functions (Huang and Coa) + time complexities of these

@@ -76,15 +76,16 @@ Lets try K-modes.
 
 features = convert.(Int64, features)
 
-costs = [(i=>KModes.kmodes(features, i).cost) for i in 2:5]
+costs = [(i=>KModes.kmodes(features, i).cost) for i in 2:6]
 
-results = KModes.kmodes(features, 4) # takes a little while
+results = KModes.kmodes(features, 4)
 
 # For the clusters I got when writing this (they will change if run again), cluster 1 was
 # mostly cheap, small bottles, that came in large packs.
 
 # plot the sales of each different cluster across the stores
 
+# note that bars() returns an array corresponding to store names in sorted order
 ps = [
     bar(sort(unique(sales.Store)), HelperFunctions.bars(i, sales, products, results), legend=false,
             title="Cluster $i", ylims=(0,1), ylabel="% Sales")
