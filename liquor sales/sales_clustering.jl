@@ -76,9 +76,10 @@ Lets try K-modes.
 
 features = convert.(Int64, features)
 
-costs = [(i=>KModes.kmodes(features, i).cost) for i in 2:6]
+costs = [(i=>KModes.kmodes(features, i; init_alg=KModes.huang_centroid_init).cost) 
+                for i in 2:6]
 
-results = KModes.kmodes(features, 4)
+results = KModes.kmodes(features, 4; init_alg=KModes.huang_centroid_init)
 
 # For the clusters I got when writing this (they will change if run again), cluster 1 was
 # mostly cheap, small bottles, that came in large packs.

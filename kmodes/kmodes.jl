@@ -7,7 +7,7 @@ Based on the Python implementation here: https://github.com/nicodv/kmodes
 using DataStructures: DefaultDict
 using StatsBase: sample
 
-export kmodes
+export kmodes, huang_centroid_init
 
 mutable struct KmodesResult
     converged::Bool
@@ -28,13 +28,39 @@ get the costs (hamming distances) from this point to each centroid in centroids.
 centroid_costs(centroids, point) = map(ctrd->hamming(ctrd, point), eachcol(centroids))
 
 """
-Randomly initializes k centroids by picking k random instances from X
+Randomly initializes k centroids by picking k random instances from X.
 Returns a A x K matrix, where A is the number of features of each
     instance of x (each column is a centroid).
 """
 function random_centroid_init(X, k)
-    idx = sample(1:size(X,2), k, replace=false)
-    centroids = collect(hcat([X[:, i] for i in idx]...))
+    idx = sample(1:size(X,2), k, replace=false) # indices of k random points (no duplicates)
+    centroids = collect(hcat([X[:, i] for i in idx]...)) # collect all points into a matrix
+    return centroids
+end
+
+"""
+Initialize centroids as described by Huang in the K-modes paper.
+Returns a A x K matrix, where A is the number of features of each
+    instance of x (each column is a centroid).
+"""
+function huang_centroid_init(X, k)
+    n_attrs = size(X, 1)
+    centroids = zeros(Int64, n_attrs, k)
+    
+    # Randomly choose attributes for each centroid. More common attributes are 
+    #     naturally chosen more frequently, reflecting attributes probabilities.
+    for attr_idx in 1:n_attrs
+        possibilities = X[attr_idx, :] # all possible attributes
+        centroids[attr_idx, :] = transpose(rand(possibilities, k)) # a random k attributes
+    end
+
+    # previously chosen centroids may create empty clusters, so re-initialize each centroid
+    #     to the closest point in the data.
+    for (centroid_idx, centroid) in enumerate(eachcol(centroids))
+        dists = [hamming(centroid, x) for x in eachcol(X)] # hamming distances to each data point
+        closest_x = argmin(dists) # index of the closest point
+        centroids[:, centroid_idx] = X[:, closest_x]
+    end
     return centroids
 end
 
@@ -192,7 +218,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
             end
         end
         new_cost = total_cost(centroids, X)
-        converged = (moves == 0) || (new_cost > cost) # check if converged (no moves, or cost increased)
+        converged = (moves == 0) || (new_cost >= cost) # check if converged (no moves, or cost increased)
         cost = new_cost
         push!(cost_history, cost)
     end
