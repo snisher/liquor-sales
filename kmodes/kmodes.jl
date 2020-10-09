@@ -196,6 +196,11 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
     while iter < max_iter && !converged
         iter += 1
         moves = 0
+
+        # make copies so if the update is worse we can return the iteration previous
+        old_centroids = deepcopy(centroids)
+        old_membership = deepcopy(membership)
+
         for (point_idx, point) in enumerate(eachcol(X))
             clust_idx = argmin(centroid_costs(centroids, point)) # idx of closest centroid
             old_clust_idx = argmax(membership[:, point_idx] .== 1) # idx of previous centroid
@@ -218,10 +223,25 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
             end
         end
         new_cost = total_cost(centroids, X)
-        converged = (moves == 0) || (new_cost >= cost) # check if converged (no moves, or cost increased)
+
+        # if this iteration resulted in greater cost, return clusters from the previous iteration
+        if new_cost > cost
+            converged = true
+            assignments = [argmax(centroids) for centroids in eachcol(old_membership)]
+            return KmodesResult(converged, assignments, cost, cost_history, old_centroids)
+        end
+
         cost = new_cost
         push!(cost_history, cost)
+
+        # if no moves were made, return these clusters
+        if moves == 0
+            converged = true
+            assignments = [argmax(centroids) for centroids in eachcol(membership)]
+            return KmodesResult(converged, assignments, cost, cost_history, centroids)
+        end
     end
+    # max iterations
     assignments = [argmax(centroids) for centroids in eachcol(membership)]
     return KmodesResult(converged, assignments, cost, cost_history, centroids)
 end
