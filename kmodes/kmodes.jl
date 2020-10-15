@@ -7,7 +7,7 @@ Based on the Python implementation here: https://github.com/nicodv/kmodes
 using DataStructures: DefaultDict
 using StatsBase: sample
 
-export kmodes, huang_centroid_init
+export kmodes, random_centroid_init, huang_centroid_init
 
 mutable struct KmodesResult
     converged::Bool
@@ -48,7 +48,7 @@ function huang_centroid_init(X, k)
     centroids = zeros(Int64, n_attrs, k)
     
     # Randomly choose attributes for each centroid. More common attributes are 
-    #     naturally chosen more frequently, reflecting attributes probabilities.
+    #     naturally chosen more frequently, reflecting attribute probabilities.
     for attr_idx in 1:n_attrs
         possibilities = X[attr_idx, :] # all possible attributes
         centroids[attr_idx, :] = transpose(rand(possibilities, k)) # a random k attributes
@@ -56,8 +56,8 @@ function huang_centroid_init(X, k)
 
     # previously chosen centroids may create empty clusters, so re-initialize each centroid
     #     to the closest point in the data.
-    for (centroid_idx, centroid) in enumerate(eachcol(centroids))
-        dists = [hamming(centroid, x) for x in eachcol(X)] # hamming distances to each data point
+    for (centroid_idx, centroid) in enumerate(eachcol(centroids)) # for each centroid
+        dists = [hamming(centroid, x) for x in eachcol(X)] # hamming distance to each data point
         closest_x = argmin(dists) # index of the closest point
         centroids[:, centroid_idx] = X[:, closest_x]
     end
@@ -91,6 +91,7 @@ function cl_attr_freq_mode(cl_attr_freq, clust_idx, attr_idx)
     mode_idx = argmax([pair[2] for pair in possible_attrs]) # idx of most frequent attribute (pair[2] is the frequency)
     return possible_attrs[mode_idx][1] # attribute associated with the above index
 end
+
 """
 Updates each centroid's attributes to the modes of its cluster.
 Mutates centroids and cl_attr_freq.
@@ -166,7 +167,7 @@ The K-Modes algorithm. Like K-Means, except uses the mode. For categorical data.
     arg init_alg - function that initializes centroids.
     max_iter::Int64 - maximum number of iterations.
 """
-function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_centroid_init, max_iter=50)
+function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=huang_centroid_init, max_iter=50)
     println("KModes! Remember: instances in columns, features in rows.")
     @assert k < size(X,2) "There must be fewer clusters than points"
     if !isnothing(init)
@@ -197,7 +198,7 @@ function kmodes(X::Array{Int64, 2}, k::Int64; init=nothing, init_alg=random_cent
         iter += 1
         moves = 0
 
-        # make copies so if the update is worse we can return the iteration previous
+        # make copies so if the update is worse we can return these
         old_centroids = deepcopy(centroids)
         old_membership = deepcopy(membership)
 
@@ -248,4 +249,4 @@ end
 
 end # module
 
-# TODO: non random centroid initialization functions (Huang and Coa) + time complexities of these
+# TODO: other centroid initialization functions (Huang and Coa) + time complexities of these
